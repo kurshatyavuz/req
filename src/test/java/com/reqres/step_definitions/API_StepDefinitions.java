@@ -1,5 +1,6 @@
 package com.reqres.step_definitions;
 
+import com.reqres.model.User;
 import com.reqres.utilities.ConfigurationReader;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
@@ -9,18 +10,16 @@ import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import org.junit.Assert;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import static io.restassured.RestAssured.baseURI;
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.*;
 
 public class API_StepDefinitions {
 
     String listUsersPath = "/api/users";
-    String getUser = "/api/users";
-    String createUser = "/api/users";
+    String register = "/api/register";
 
     RequestSpecification reqspec;
     Response response;
@@ -28,7 +27,9 @@ public class API_StepDefinitions {
     @Given("existing Server application {string}")
     public void existing_Server_application(String string) {
         baseURI = ConfigurationReader.getProperty("baseUri");
-        reqspec = given().accept(ContentType.JSON);
+        reqspec = given()
+                .log().all()
+                .contentType(ContentType.JSON);
     }
 
     @Then("on GET request to {string} it returns expected users list")
@@ -82,5 +83,19 @@ public class API_StepDefinitions {
         Assert.assertEquals(404, response.statusCode());
     }
 
+    @Then("POST new registration {string} and {string} to register endpoint returns expected {string} and {string} and {string}")
+    public void post_new_registration_and_to_register_endpoint_returns_expected_and_and(String email, String password, String statusCode, String id, String token) {
+        User user = new User(email,password);
+        reqspec
+                .body(user)
+                .when()
+                .post(register)
+                .prettyPeek()
+                .then()
+                .log().ifValidationFails()
+                .statusCode(Integer.parseInt(statusCode))
+                .body("id",is(Integer.parseInt(id)))
+                .body("token",is(token));
+    }
 
 }
